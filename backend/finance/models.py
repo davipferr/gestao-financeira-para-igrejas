@@ -29,6 +29,33 @@ class Category(models.Model):
         return f'{self.name} ({self.get_kind_display()})'
 
 
+class StatementImport(models.Model):
+    class FileFormat(models.TextChoices):
+        OFX = 'ofx', 'OFX'
+        CSV = 'csv', 'CSV'
+
+    file_name = models.CharField('arquivo', max_length=255)
+    file_format = models.CharField('formato', max_length=3, choices=FileFormat.choices)
+    imported_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='statement_imports',
+        verbose_name='importado por',
+    )
+    imported_at = models.DateTimeField('importado em', auto_now_add=True)
+    created_count = models.PositiveIntegerField('lançamentos criados', default=0)
+    duplicate_count = models.PositiveIntegerField('duplicados ignorados', default=0)
+    ignored_count = models.PositiveIntegerField('linhas sem valor ignoradas', default=0)
+
+    class Meta:
+        verbose_name = 'importação de extrato'
+        verbose_name_plural = 'importações de extrato'
+        ordering = ['-imported_at']
+
+    def __str__(self):
+        return f'{self.file_name} ({self.imported_at:%d/%m/%Y %H:%M})'
+
+
 class Transaction(models.Model):
     date = models.DateField('data', db_index=True)
     description = models.CharField('descrição', max_length=255)
@@ -58,6 +85,16 @@ class Transaction(models.Model):
     )
     created_at = models.DateTimeField('cadastrado em', auto_now_add=True)
     updated_at = models.DateTimeField('atualizado em', auto_now=True)
+    statement_import = models.ForeignKey(
+        StatementImport,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transactions',
+        verbose_name='importação de origem',
+    )
+    # Impressão digital do lançamento no extrato; evita importar o mesmo lançamento duas vezes.
+    import_key = models.CharField('chave de importação', max_length=64, null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         verbose_name = 'lançamento'

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Category, Kind, Transaction
+from .models import Category, Kind, StatementImport, Transaction
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -26,16 +26,21 @@ class CategorySerializer(serializers.ModelSerializer):
         return attrs
 
 
+def display_name(user):
+    return user.get_full_name() or user.get_username()
+
+
 class TransactionSerializer(serializers.ModelSerializer):
     kind_display = serializers.CharField(source='get_kind_display', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True, default=None)
     created_by_name = serializers.SerializerMethodField()
+    imported = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
         fields = [
             'id', 'date', 'description', 'amount', 'kind', 'kind_display',
-            'category', 'category_name', 'created_by_name', 'created_at', 'updated_at',
+            'category', 'category_name', 'created_by_name', 'imported', 'created_at', 'updated_at',
         ]
         read_only_fields = ['created_at', 'updated_at']
         extra_kwargs = {
@@ -43,8 +48,10 @@ class TransactionSerializer(serializers.ModelSerializer):
         }
 
     def get_created_by_name(self, transaction):
-        user = transaction.created_by
-        return user.get_full_name() or user.get_username()
+        return display_name(transaction.created_by)
+
+    def get_imported(self, transaction):
+        return transaction.statement_import_id is not None
 
     def validate_description(self, value):
         return value.strip()
@@ -60,3 +67,24 @@ class TransactionSerializer(serializers.ModelSerializer):
                 )
             })
         return attrs
+
+
+class StatementUploadSerializer(serializers.Serializer):
+    file = serializers.FileField(label='arquivo', error_messages={
+        'required': 'Selecione o arquivo do extrato (.ofx ou .csv).',
+        'empty': 'O arquivo enviado está vazio.',
+    })
+
+
+class StatementImportSerializer(serializers.ModelSerializer):
+    imported_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StatementImport
+        fields = [
+            'id', 'file_name', 'file_format', 'imported_by_name', 'imported_at',
+            'created_count', 'duplicate_count', 'ignored_count',
+        ]
+
+    def get_imported_by_name(self, statement_import):
+        return display_name(statement_import.imported_by)

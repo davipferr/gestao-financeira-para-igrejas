@@ -1,12 +1,19 @@
 from django.db.models import ProtectedError
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
 from accounts.permissions import IsAdministrator
 
 from .filters import TransactionFilterSerializer
-from .models import Category, Kind, Transaction
-from .serializers import CategorySerializer, TransactionSerializer
+from .importers import StatementImportError, import_statement
+from .models import Category, Kind, StatementImport, Transaction
+from .serializers import (
+    CategorySerializer,
+    StatementImportSerializer,
+    StatementUploadSerializer,
+    TransactionSerializer,
+)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -50,3 +57,19 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+
+class StatementImportViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+    serializer_class = StatementImportSerializer
+    permission_classes = [IsAdministrator]
+    parser_classes = [MultiPartParser]
+    queryset = StatementImport.objects.select_related('imported_by')
+
+    def create(self, request, *args, **kwargs):
+        upload = StatementUploadSerializer(data=request.data)
+        upload.is_valid(raise_exception=True)
+        try:
+            statement_import = import_statement(upload.validated_data['file'], request.user)
+        except StatementImportError as error:
+            return Response({'detail': str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(StatementImportSerializer(statement_import).data, status=status.HTTP_201_CREATED)
