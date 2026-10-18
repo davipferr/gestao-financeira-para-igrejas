@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { House, LogOut } from 'lucide-react'
+import { House, ListOrdered, LogOut, Tags } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,11 @@ import { ApiError } from '@/lib/api'
 import { displayName, useAuth } from '@/lib/auth-context'
 import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [{ to: '/', label: 'Início', icon: House }]
+const NAV_ITEMS = [
+  { to: '/', label: 'Início', icon: House, adminOnly: false },
+  { to: '/lancamentos', label: 'Lançamentos', icon: ListOrdered, adminOnly: true },
+  { to: '/categorias', label: 'Categorias', icon: Tags, adminOnly: true },
+]
 
 export function AppLayout() {
   const { user, logout } = useAuth()
@@ -52,7 +56,7 @@ export function AppLayout() {
         </div>
         <nav aria-label="Menu principal" className="mx-auto max-w-6xl px-4">
           <ul className="flex flex-wrap gap-1">
-            {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+            {NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === 'admin').map(({ to, label, icon: Icon }) => (
               <li key={to}>
                 <NavLink
                   to={to}

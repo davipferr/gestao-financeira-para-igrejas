@@ -14,6 +14,9 @@ class CategorySerializer(serializers.ModelSerializer):
         return value.strip()
 
     def validate(self, attrs):
+        # Mudar o tipo deixaria os lançamentos já classificados com o tipo errado.
+        if self.instance is not None and 'kind' in attrs and attrs['kind'] != self.instance.kind:
+            raise serializers.ValidationError({'kind': 'O tipo não pode ser alterado depois de criada a categoria.'})
         name = attrs.get('name', getattr(self.instance, 'name', None))
         kind = attrs.get('kind', getattr(self.instance, 'kind', None))
         duplicates = Category.objects.filter(name__iexact=name, kind=kind)

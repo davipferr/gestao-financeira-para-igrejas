@@ -65,6 +65,18 @@ class CategoryTests(FinanceTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+    def test_kind_cannot_change_after_creation(self):
+        response = self.client.patch(reverse('category-detail', args=[self.tithes.pk]), {'kind': 'expense'})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()['kind'], ['O tipo não pode ser alterado depois de criada a categoria.'])
+
+    def test_rename_keeps_working_when_kind_is_sent_unchanged(self):
+        response = self.client.patch(reverse('category-detail', args=[self.tithes.pk]), {'name': 'Dízimo', 'kind': 'income'})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['name'], 'Dízimo')
+
     def test_list_can_be_filtered_by_kind_and_active(self):
         self.water.is_active = False
         self.water.save()
