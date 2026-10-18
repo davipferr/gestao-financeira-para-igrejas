@@ -1,12 +1,14 @@
 from django.db.models import ProtectedError
 from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import api_view
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
 from accounts.permissions import IsAdministrator
 
-from .filters import TransactionFilterSerializer
+from .filters import ReportPeriodSerializer, TransactionFilterSerializer
 from .importers import StatementImportError, import_statement
+from .reports import build_dre
 from .models import Category, Kind, StatementImport, Transaction
 from .serializers import (
     CategorySerializer,
@@ -73,3 +75,11 @@ class StatementImportViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, vie
         except StatementImportError as error:
             return Response({'detail': str(error)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(StatementImportSerializer(statement_import).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+def dre_report(request):
+    # Aberto a administradores e membros: o DRE só traz totais, servindo de prestação de contas.
+    period = ReportPeriodSerializer(data=request.query_params)
+    period.is_valid(raise_exception=True)
+    return Response(build_dre(period.validated_data['date_from'], period.validated_data['date_to']))

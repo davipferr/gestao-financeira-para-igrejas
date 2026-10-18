@@ -1,3 +1,6 @@
+import calendar
+
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import Kind
@@ -41,3 +44,19 @@ class TransactionFilterSerializer(serializers.Serializer):
         if 'search' in filters:
             queryset = queryset.filter(description__icontains=filters['search'])
         return queryset
+
+
+class ReportPeriodSerializer(serializers.Serializer):
+    """Valida o período do relatório; sem datas, usa o mês atual."""
+
+    date_from = serializers.DateField(required=False)
+    date_to = serializers.DateField(required=False)
+
+    def validate(self, attrs):
+        today = timezone.localdate()
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        attrs.setdefault('date_from', today.replace(day=1))
+        attrs.setdefault('date_to', today.replace(day=last_day))
+        if attrs['date_from'] > attrs['date_to']:
+            raise serializers.ValidationError({'date_to': 'A data final não pode ser anterior à data inicial.'})
+        return attrs
