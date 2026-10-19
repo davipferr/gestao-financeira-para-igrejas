@@ -45,3 +45,32 @@ export type Paginated<T> = {
   previous: string | null
   results: T[]
 }
+
+export type DreCategory = {
+  id: number | null
+  name: string
+  total: string
+}
+
+export type DreMonth = {
+  month: string
+  income: string
+  expense: string
+  result: string
+}
+
+export type DreReport = {
+  period: { date_from: string; date_to: string }
+  income: { total: string; categories: DreCategory[] }
+  expense: { total: string; categories: DreCategory[] }
+  result: string
+  result_label: 'Superávit' | 'Déficit'
+  monthly: DreMonth[]
+}
+
+export type AccessLog = {
+  id: number
+  username: string
+  full_name: string
+  accessed_at: string
+}

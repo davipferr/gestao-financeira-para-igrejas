@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileUp, House, ListOrdered, LogOut, Tags } from 'lucide-react'
+import { BarChart3, FileUp, History, House, ListOrdered, LogOut, Tags } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
@@ -9,9 +9,11 @@ import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Início', icon: House, adminOnly: false },
+  { to: '/prestacao-de-contas', label: 'Prestação de contas', icon: BarChart3, adminOnly: false },
   { to: '/lancamentos', label: 'Lançamentos', icon: ListOrdered, adminOnly: true },
   { to: '/categorias', label: 'Categorias', icon: Tags, adminOnly: true },
   { to: '/importar', label: 'Importar extrato', icon: FileUp, adminOnly: true },
+  { to: '/acessos', label: 'Acessos', icon: History, adminOnly: true },
 ]
 
 export function AppLayout() {

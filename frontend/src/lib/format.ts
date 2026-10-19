@@ -4,6 +4,12 @@ export function formatMoney(value: string | number) {
   return currency.format(Number(value))
 }
 
+/** Valor com sinal de menos legível: -650.25 vira "− R$ 650,25". */
+export function formatSignedMoney(value: string | number) {
+  const number = Number(value)
+  return `${number < 0 ? '− ' : ''}${currency.format(Math.abs(number))}`
+}
+
 /**
  * Converte o valor digitado no formato brasileiro ("1.234,56" ou "R$ 25,5")
  * para o formato da API ("1234.56"). Devolve null quando não é um número válido.

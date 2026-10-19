@@ -15,6 +15,13 @@ window.matchMedia ??= (query: string) =>
     dispatchEvent: () => false,
   }) as MediaQueryList
 
+// O jsdom também não tem ResizeObserver, usado pelos gráficos (recharts).
+window.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()

@@ -5,10 +5,12 @@ import { RequireAdmin } from '@/components/RequireAdmin'
 import { RequireAuth } from '@/components/RequireAuth'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/lib/auth'
+import { AccessLogPage } from '@/pages/AccessLogPage'
 import { CategoriesPage } from '@/pages/CategoriesPage'
 import { HomePage } from '@/pages/HomePage'
 import { ImportPage } from '@/pages/ImportPage'
 import { LoginPage } from '@/pages/LoginPage'
+import { ReportPage } from '@/pages/ReportPage'
 import { TransactionsPage } from '@/pages/TransactionsPage'
 
 export default function App() {
@@ -25,6 +27,7 @@ export default function App() {
             }
           >
             <Route index element={<HomePage />} />
+            <Route path="prestacao-de-contas" element={<ReportPage />} />
             <Route
               path="lancamentos"
               element={
@@ -46,6 +49,14 @@ export default function App() {
               element={
                 <RequireAdmin>
                   <ImportPage />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="acessos"
+              element={
+                <RequireAdmin>
+                  <AccessLogPage />
                 </RequireAdmin>
               }
             />

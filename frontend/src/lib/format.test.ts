@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatDate, formatMoney, parseMoneyInput, toMoneyInput } from '@/lib/format'
+import { formatDate, formatMoney, formatSignedMoney, parseMoneyInput, toMoneyInput } from '@/lib/format'
 
 describe('formatação', () => {
   it('formata valores em reais', () => {
     expect(formatMoney('1234.5')).toBe('R$ 1.234,50')
+  })
+
+  it('mostra o sinal de menos de forma legível', () => {
+    expect(formatSignedMoney('-650.25')).toBe('− R$ 650,25')
+    expect(formatSignedMoney('890')).toBe('R$ 890,00')
   })
 
   it('converte valores digitados no formato brasileiro', () => {
