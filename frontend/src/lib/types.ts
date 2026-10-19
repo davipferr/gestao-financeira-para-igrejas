@@ -28,6 +28,17 @@ export type Transaction = {
   updated_at: string
 }
 
+export type StatementImport = {
+  id: number
+  file_name: string
+  file_format: 'ofx' | 'csv'
+  imported_by_name: string
+  imported_at: string
+  created_count: number
+  duplicate_count: number
+  ignored_count: number
+}
+
 export type Paginated<T> = {
   count: number
   next: string | null

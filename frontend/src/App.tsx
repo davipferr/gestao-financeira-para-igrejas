@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/lib/auth'
 import { CategoriesPage } from '@/pages/CategoriesPage'
 import { HomePage } from '@/pages/HomePage'
+import { ImportPage } from '@/pages/ImportPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { TransactionsPage } from '@/pages/TransactionsPage'
 
@@ -37,6 +38,14 @@ export default function App() {
               element={
                 <RequireAdmin>
                   <CategoriesPage />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="importar"
+              element={
+                <RequireAdmin>
+                  <ImportPage />
                 </RequireAdmin>
               }
             />

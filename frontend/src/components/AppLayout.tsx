@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { House, ListOrdered, LogOut, Tags } from 'lucide-react'
+import { FileUp, House, ListOrdered, LogOut, Tags } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Início', icon: House, adminOnly: false },
   { to: '/lancamentos', label: 'Lançamentos', icon: ListOrdered, adminOnly: true },
   { to: '/categorias', label: 'Categorias', icon: Tags, adminOnly: true },
+  { to: '/importar', label: 'Importar extrato', icon: FileUp, adminOnly: true },
 ]
 
 export function AppLayout() {

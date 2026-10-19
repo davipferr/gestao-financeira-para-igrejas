@@ -28,6 +28,12 @@ export function formatDate(isoDate: string) {
   return `${day}/${month}/${year}`
 }
 
+const dateTime = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+
+export function formatDateTime(isoDateTime: string) {
+  return dateTime.format(new Date(isoDateTime))
+}
+
 export function todayIso() {
   const now = new Date()
   const month = String(now.getMonth() + 1).padStart(2, '0')

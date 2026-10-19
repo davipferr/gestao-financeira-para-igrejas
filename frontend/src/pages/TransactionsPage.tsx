@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -33,9 +34,20 @@ function errorMessage(error: unknown, fallback: string) {
   return error instanceof ApiError ? error.message : fallback
 }
 
+function filtersFromUrl(searchParams: URLSearchParams): Filters {
+  const filters = { ...EMPTY_FILTERS }
+  for (const key of Object.keys(filters) as (keyof Filters)[]) {
+    filters[key] = searchParams.get(key) ?? ''
+  }
+  return filters
+}
+
 export function TransactionsPage() {
-  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS)
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
+  // Os filtros iniciais podem vir da URL, por exemplo ao abrir "/lancamentos?category=none"
+  // pelo botão de classificar os lançamentos importados.
+  const [searchParams] = useSearchParams()
+  const [draft, setDraft] = useState<Filters>(() => filtersFromUrl(searchParams))
+  const [filters, setFilters] = useState<Filters>(() => filtersFromUrl(searchParams))
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState<{ transaction: Transaction | null } | null>(null)
   const [deleting, setDeleting] = useState<Transaction | null>(null)
