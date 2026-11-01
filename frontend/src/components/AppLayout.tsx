@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BarChart3, FileUp, History, House, ListOrdered, LogOut, Tags } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 
+import { AccessibilityToolbar } from '@/components/AccessibilityToolbar'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api'
 import { displayName, useAuth } from '@/lib/auth-context'
@@ -42,6 +43,9 @@ export function AppLayout() {
       </a>
 
       <header className="border-b bg-background">
+        <div className="border-b bg-muted/40">
+          <AccessibilityToolbar className="mx-auto max-w-6xl justify-end px-4 py-1" />
+        </div>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <p className="text-lg font-semibold">Gestão Financeira para Igrejas</p>
           {user && (

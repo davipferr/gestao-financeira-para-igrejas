@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 import App from '@/App'
 import { presetPeriod } from '@/lib/periods'
@@ -34,6 +34,12 @@ function renderAt(path: string) {
 }
 
 describe('Prestação de contas', () => {
+  // O gráfico é carregado sob demanda; importá-lo antes evita que o teste dependa
+  // do tempo que a biblioteca de gráficos leva para carregar.
+  beforeAll(async () => {
+    await import('@/components/report/MonthlyChart')
+  })
+
   it('mostra totais, resultado em palavras e a divisão por categoria', async () => {
     mockFetch({ 'GET /api/auth/me/': { body: MEMBER }, [dreKey('this-month')]: { body: REPORT } })
 
@@ -55,7 +61,7 @@ describe('Prestação de contas', () => {
 
     renderAt('/prestacao-de-contas')
 
-    const figure = await screen.findByRole('figure', { name: 'Rendimentos e pagamentos mês a mês' })
+    const figure = await screen.findByRole('figure', { name: 'Rendimentos e pagamentos mês a mês' }, { timeout: 5000 })
     const row = (await within(figure).findByText('Setembro de 2026')).closest('tr')!
     expect(row).toHaveTextContent('R$ 1.000,00')
     expect(row).toHaveTextContent('R$ 1.200,50')

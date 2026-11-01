@@ -1,6 +1,8 @@
 import os
+import re
 from pathlib import Path
 
+import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
@@ -28,6 +30,12 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
+# O Render informa o endereço público do serviço nesta variável.
+if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+    ALLOWED_HOSTS.append(os.environ['RENDER_EXTERNAL_HOSTNAME'])
+
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -45,6 +53,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -74,16 +83,23 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': required_env('DB_NAME'),
-        'USER': required_env('DB_USER'),
-        'PASSWORD': required_env('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+# Em produção os serviços de hospedagem fornecem o banco em uma única variável
+# (DATABASE_URL). Localmente, cada parte da conexão fica no arquivo .env.
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.parse(os.environ['DATABASE_URL'], conn_max_age=600, conn_health_checks=True),
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': required_env('DB_NAME'),
+            'USER': required_env('DB_USER'),
+            'PASSWORD': required_env('DB_PASSWORD'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -106,12 +122,27 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
 }
+
+# Em produção o Django também entrega o frontend já compilado (pasta frontend/dist),
+# assim tudo fica no mesmo endereço e o cookie de sessão funciona sem CORS.
+FRONTEND_DIST = BASE_DIR.parent / 'frontend' / 'dist'
+if FRONTEND_DIST.exists():
+    WHITENOISE_ROOT = FRONTEND_DIST
+    WHITENOISE_INDEX_FILE = True
+
+
+def whitenoise_immutable_file(path, url):
+    # Os arquivos que o Vite gera em /assets/ têm um código no nome que muda a cada
+    # versão, então o navegador pode guardá-los em cache por tempo indeterminado.
+    return re.match(r'^/assets/.+-[A-Za-z0-9_-]{8,}\.\w+$', url) is not None
+
+
+WHITENOISE_IMMUTABLE_FILE_TEST = whitenoise_immutable_file
+WHITENOISE_MIMETYPES = {'.csv': 'text/csv'}
 
 
 REST_FRAMEWORK = {
@@ -139,3 +170,14 @@ SESSION_COOKIE_AGE = 60 * 60 * 8
 
 CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')
 CORS_ALLOW_CREDENTIALS = True
+
+
+# Proteções que só fazem sentido com HTTPS, ativadas fora do modo de desenvolvimento.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'True') == 'True'
+    # A checagem de saúde do serviço de hospedagem chega por HTTP interno, sem redirecionar.
+    SECURE_REDIRECT_EXEMPT = [r'^api/health/$']
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30

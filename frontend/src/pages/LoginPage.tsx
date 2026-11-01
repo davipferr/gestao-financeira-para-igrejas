@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 
+import { AccessibilityToolbar } from '@/components/AccessibilityToolbar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,74 +52,79 @@ export function LoginPage() {
   }
 
   return (
-    <main id="conteudo" className="flex min-h-svh items-center justify-center bg-muted/40 px-4 py-10">
-      <Card className="w-full max-w-md">
-        <CardHeader className="gap-2 text-center">
-          <CardTitle>
-            <h1 className="text-2xl font-semibold">Gestão Financeira para Igrejas</h1>
-          </CardTitle>
-          <CardDescription className="text-base">
-            Entre com o usuário e a senha que você recebeu da igreja.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-            {error && (
-              <Alert variant="destructive" ref={errorRef} tabIndex={-1} id="login-erro">
-                <AlertDescription className="text-base">{error}</AlertDescription>
-              </Alert>
-            )}
+    <div className="flex min-h-svh flex-col bg-muted/40">
+      <header className="border-b bg-background">
+        <AccessibilityToolbar className="mx-auto max-w-6xl justify-end px-4 py-1" />
+      </header>
+      <main id="conteudo" className="flex flex-1 items-center justify-center px-4 py-10">
+        <Card className="w-full max-w-md">
+          <CardHeader className="gap-2 text-center">
+            <CardTitle>
+              <h1 className="text-2xl font-semibold">Gestão Financeira para Igrejas</h1>
+            </CardTitle>
+            <CardDescription className="text-base">
+              Entre com o usuário e a senha que você recebeu da igreja.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+              {error && (
+                <Alert variant="destructive" ref={errorRef} tabIndex={-1} id="login-erro">
+                  <AlertDescription className="text-base">{error}</AlertDescription>
+                </Alert>
+              )}
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="username">Usuário</Label>
-              <Input
-                id="username"
-                name="username"
-                autoComplete="username"
-                autoCapitalize="none"
-                spellCheck={false}
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? 'login-erro' : undefined}
-                autoFocus
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="password">Senha</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="username">Usuário</Label>
                 <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  id="username"
+                  name="username"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={error ? 'login-erro' : undefined}
+                  autoFocus
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowPassword((current) => !current)}
-                  aria-pressed={showPassword}
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                  title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                >
-                  {showPassword ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
-                </Button>
               </div>
-            </div>
 
-            <Button type="submit" size="lg" disabled={submitting} className="w-full">
-              <LogIn aria-hidden />
-              {submitting ? 'Entrando…' : 'Entrar'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </main>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? 'login-erro' : undefined}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowPassword((current) => !current)}
+                    aria-pressed={showPassword}
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                    title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {showPassword ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button type="submit" size="lg" disabled={submitting} className="w-full">
+                <LogIn aria-hidden />
+                {submitting ? 'Entrando…' : 'Entrar'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
   )
 }

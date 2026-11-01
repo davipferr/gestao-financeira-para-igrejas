@@ -1,0 +1,21 @@
+# Configuração do deploy no Render (https://render.com). O banco PostgreSQL fica
+# em um serviço separado (por exemplo, o Neon), informado em DATABASE_URL.
+services:
+  - type: web
+    name: gestao-financeira-igrejas
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health/
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        sync: false
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
