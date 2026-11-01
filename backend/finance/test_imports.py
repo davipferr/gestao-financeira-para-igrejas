@@ -66,6 +66,12 @@ class ParseAmountTests(SimpleTestCase):
         self.assertEqual(parse_amount('1,234.56'), Decimal('1234.56'))
         self.assertEqual(parse_amount('R$ 25,5'), Decimal('25.50'))
 
+    def test_signed_currency_values(self):
+        self.assertEqual(parse_amount('-R$ 300,00'), Decimal('-300.00'))
+        self.assertEqual(parse_amount('+R$ 300,00'), Decimal('300.00'))
+        self.assertEqual(parse_amount('−R$ 300,00'), Decimal('-300.00'))
+        self.assertEqual(parse_amount('-R$ 1.300,00'), Decimal('-1300.00'))
+
     def test_dot_without_cents_is_thousands_separator(self):
         self.assertEqual(parse_amount('1.000'), Decimal('1000.00'))
 
@@ -114,6 +120,14 @@ class ParseCsvTests(SimpleTestCase):
         entries = parse_csv('Data;Hora;Tipo;Valor\n01/09/2026;10:30;Pix;-10,00\n')
 
         self.assertEqual(entries, [ParsedEntry(date(2026, 9, 1), '', Decimal('-10.00'))])
+
+    def test_reads_bank_csv_with_signed_currency_and_iso_dates(self):
+        entries = parse_csv(
+            'data,hora,tipo,"origem / destino",valor,"forma de pagamento"\n'
+            '2026-10-30,17:27,"Dinheiro resgatado","Do cofrinho","−R$ 300,00",\n'
+        )
+
+        self.assertEqual(entries, [ParsedEntry(date(2026, 10, 30), '', Decimal('-300.00'))])
 
     def test_missing_column_lists_found_columns(self):
         with self.assertRaisesMessage(StatementImportError, 'Colunas encontradas: Data, Descrição.'):

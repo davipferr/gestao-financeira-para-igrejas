@@ -47,8 +47,13 @@ def normalize(text):
     return ' '.join(without_accents.casefold().split())
 
 
+# Alguns bancos escrevem o sinal de menos tipográfico (−) ou um travessão no lugar do hífen.
+MINUS_SIGNS = str.maketrans({'−': '-', '–': '-', '—': '-'})
+
+
 def parse_amount(value, decimal_point_only=False):
-    text = value.strip().replace('R$', '').replace(' ', '')
+    # split/join remove qualquer espaço, inclusive o não separável que alguns bancos põem depois do "R$".
+    text = ''.join(value.translate(MINUS_SIGNS).replace('R$', '').split())
     if decimal_point_only:
         # No OFX o ponto é sempre o separador decimal; alguns bancos usam vírgula no lugar.
         normalized = text.replace(',', '.')
