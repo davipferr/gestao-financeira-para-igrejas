@@ -56,6 +56,8 @@ export function TransactionsPage() {
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState<{ transaction: Transaction | null } | null>(null)
   const [deleting, setDeleting] = useState<Transaction | null>(null)
+  // Some da tela na hora, sem esperar a lista recarregar, para não ser excluído duas vezes.
+  const [deletedIds, setDeletedIds] = useState<number[]>([])
 
   const params = new URLSearchParams({ page: String(page) })
   for (const [key, value] of Object.entries(filters)) {
@@ -72,6 +74,7 @@ export function TransactionsPage() {
     'Não foi possível carregar as categorias.',
   )
   const categories = categoryData ?? []
+  const transactions = data ? data.results.filter((transaction) => !deletedIds.includes(transaction.id)) : []
 
   function applyFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -97,16 +100,24 @@ export function TransactionsPage() {
     }
     const transaction = deleting
     setDeleting(null)
+    setDeletedIds((ids) => [...ids, transaction.id])
     try {
       await apiRequest(`/api/transactions/${transaction.id}/`, { method: 'DELETE' })
       toast.success('Lançamento excluído.')
-      if (data && data.results.length === 1 && page > 1) {
-        setPage(page - 1)
-      } else {
-        load()
-      }
     } catch (error) {
-      toast.error(errorMessage(error, 'Não foi possível excluir o lançamento.'))
+      // 404: outra pessoa (ou outra aba) já excluiu; o resultado é o mesmo.
+      if (error instanceof ApiError && error.status === 404) {
+        toast.success('Este lançamento já tinha sido excluído.')
+      } else {
+        setDeletedIds((ids) => ids.filter((id) => id !== transaction.id))
+        toast.error(errorMessage(error, 'Não foi possível excluir o lançamento.'))
+        return
+      }
+    }
+    if (transactions.length === 1 && page > 1) {
+      setPage(page - 1)
+    } else {
+      load()
     }
   }
 
@@ -225,14 +236,14 @@ export function TransactionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.results.length === 0 && (
+              {transactions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-muted-foreground">
                     Nenhum lançamento encontrado.
                   </TableCell>
                 </TableRow>
               )}
-              {data.results.map((transaction) => (
+              {transactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell className="hidden sm:table-cell">{formatDate(transaction.date)}</TableCell>
                   <TableCell className="max-w-xs whitespace-normal">

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -140,6 +140,43 @@ describe('Página de lançamentos', () => {
 
     expect(await screen.findByText('Lançamento excluído.')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith('/api/transactions/10/', expect.objectContaining({ method: 'DELETE' }))
+  })
+
+  it('tira o lançamento da tela logo após a exclusão, sem esperar a lista recarregar', async () => {
+    const fetchMock = mockFetch({
+      ...baseRoutes(),
+      // A recarga ainda devolve o lançamento, como acontece quando ela chega antes da exclusão terminar.
+      'GET /api/transactions/?page=1': { body: LIST },
+      'DELETE /api/transactions/10/': { status: 204 },
+    })
+    const user = userEvent.setup()
+    renderAt('/lancamentos')
+
+    await user.click(await screen.findByRole('button', { name: 'Excluir Dízimos do culto de domingo' }))
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Excluir' }))
+
+    // Espera a lista recarregar depois da exclusão.
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.filter(([url]) => url === '/api/transactions/?page=1')).toHaveLength(2),
+    )
+    expect(screen.queryByRole('button', { name: 'Excluir Dízimos do culto de domingo' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Excluir CONTA DE ÁGUA SAAE' })).toBeInTheDocument()
+  })
+
+  it('trata como excluído o lançamento que já não existe no servidor', async () => {
+    mockFetch({
+      ...baseRoutes(),
+      'GET /api/transactions/?page=1': [{ body: LIST }, { body: page([LIST.results[1]]) }],
+      'DELETE /api/transactions/10/': { status: 404, body: { detail: 'No Transaction matches the given query.' } },
+    })
+    const user = userEvent.setup()
+    renderAt('/lancamentos')
+
+    await user.click(await screen.findByRole('button', { name: 'Excluir Dízimos do culto de domingo' }))
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Excluir' }))
+
+    expect(await screen.findByText('Este lançamento já tinha sido excluído.')).toBeInTheDocument()
+    expect(screen.queryByText('No Transaction matches the given query.')).not.toBeInTheDocument()
   })
 
   it('bloqueia a página para membros', async () => {
