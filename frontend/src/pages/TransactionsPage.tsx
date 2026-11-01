@@ -30,6 +30,11 @@ type Filters = {
 
 const EMPTY_FILTERS: Filters = { date_from: '', date_to: '', kind: '', category: '', search: '' }
 
+// Lançamentos importados podem vir sem descrição; os botões e a confirmação precisam de um nome mesmo assim.
+function transactionLabel(transaction: Transaction) {
+  return transaction.description || `lançamento de ${formatDate(transaction.date)}`
+}
+
 function errorMessage(error: unknown, fallback: string) {
   return error instanceof ApiError ? error.message : fallback
 }
@@ -262,7 +267,7 @@ export function TransactionsPage() {
                       <Button
                         variant="outline"
                         onClick={() => setEditing({ transaction })}
-                        aria-label={`Editar ${transaction.description}`}
+                        aria-label={`Editar ${transactionLabel(transaction)}`}
                         title="Editar"
                         className="max-xl:w-11 max-xl:px-0"
                       >
@@ -272,7 +277,7 @@ export function TransactionsPage() {
                       <Button
                         variant="destructive"
                         onClick={() => setDeleting(transaction)}
-                        aria-label={`Excluir ${transaction.description}`}
+                        aria-label={`Excluir ${transactionLabel(transaction)}`}
                         title="Excluir"
                         className="max-xl:w-11 max-xl:px-0"
                       >
@@ -316,7 +321,7 @@ export function TransactionsPage() {
         title="Excluir lançamento?"
         description={
           deleting
-            ? `O lançamento "${deleting.description}" de ${formatMoney(deleting.amount)} em ${formatDate(deleting.date)} será excluído. Esta ação não pode ser desfeita.`
+            ? `O ${deleting.description ? `lançamento "${deleting.description}"` : 'lançamento'} de ${formatMoney(deleting.amount)} em ${formatDate(deleting.date)} será excluído. Esta ação não pode ser desfeita.`
             : ''
         }
         confirmLabel="Excluir"

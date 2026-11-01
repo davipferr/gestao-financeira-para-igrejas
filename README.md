@@ -15,7 +15,7 @@ Desenvolvido por **Davi Pinto Ferreira** na disciplina **Atividade Extensionista
 
 - **Lançamentos** com filtros por período, tipo, categoria e busca na descrição.
 - **Categorias** de rendimentos e pagamentos. O sistema já vem com as mais comuns de uma igreja, como dízimos, ofertas, água, energia e aluguel.
-- **Importação de extrato** em OFX (formato dos bancos) ou CSV, sem duplicar lançamentos ao importar o mesmo arquivo de novo.
+- **Importação de extrato** em OFX (formato dos bancos) ou CSV. Todas as linhas viram lançamentos: importar o mesmo arquivo de novo cria os lançamentos outra vez.
 - **Prestação de contas (DRE)**: rendimentos, pagamentos e resultado (superávit ou déficit), com gráfico e tabelas.
 - **Registro de acessos**: nome do usuário, data e horário de cada entrada no sistema. O registro não pode ser alterado.
 
@@ -39,7 +39,7 @@ Os membros veem só **totais**, nunca os lançamentos individuais, para não exp
 1. Login com perfis Administrador e Membro.
 2. Cadastro de categorias de rendimentos e pagamentos.
 3. Cadastro, edição e exclusão de lançamentos.
-4. Importação de extrato bancário OFX/CSV, ignorando duplicados.
+4. Importação de extrato bancário OFX/CSV.
 5. Classificação dos lançamentos importados.
 6. Relatório DRE por período, com gráficos.
 7. Prestação de contas para os membros.
@@ -140,7 +140,7 @@ cd frontend && npm test
 ## Formato do extrato
 
 - **OFX:** é o formato que os bancos exportam (às vezes com o nome "Money"). É o recomendado.
-- **CSV:** colunas `data`, `descrição` e `valor`, separadas por `;` ou `,`. Datas em `dd/mm/aaaa` e valores como `1.234,56`. Valores negativos são pagamentos. A tela de importação oferece um modelo para baixar.
+- **CSV:** colunas `data` e `valor` e, se houver, `descrição` (sem ela, a descrição fica vazia), separadas por `;` ou `,`. Datas em `dd/mm/aaaa` e valores como `1.234,56`. Valores negativos são pagamentos. A tela de importação oferece um modelo para baixar.
 
 ## Deploy (Render + Neon)
 

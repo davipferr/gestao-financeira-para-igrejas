@@ -28,7 +28,7 @@ class TransactionAdmin(admin.ModelAdmin):
 @admin.register(StatementImport)
 class StatementImportAdmin(admin.ModelAdmin):
     # O histórico é gerado pela importação na API, então fica somente leitura.
-    list_display = ['file_name', 'file_format', 'imported_by', 'imported_at', 'created_count', 'duplicate_count']
+    list_display = ['file_name', 'file_format', 'imported_by', 'imported_at', 'created_count']
     list_filter = ['file_format', 'imported_at']
 
     def has_add_permission(self, request):

@@ -13,7 +13,6 @@ const PREVIOUS_IMPORT = {
   imported_by_name: 'Carlos Contador',
   imported_at: '2026-10-01T09:30:00-03:00',
   created_count: 12,
-  duplicate_count: 0,
   ignored_count: 0,
 }
 
@@ -23,7 +22,6 @@ const NEW_IMPORT = {
   file_name: 'extrato-outubro.csv',
   file_format: 'csv',
   created_count: 3,
-  duplicate_count: 1,
   ignored_count: 1,
 }
 
@@ -69,7 +67,6 @@ describe('Página de importação de extrato', () => {
     const alert = summary.closest('[role="alert"]') as HTMLElement
     expect(alert).toHaveFocus()
     expect(alert).toHaveTextContent('3 lançamentos criados')
-    expect(alert).toHaveTextContent('1 duplicado ignorado')
     expect(alert).toHaveTextContent('1 linha sem valor ignorada')
 
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')

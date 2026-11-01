@@ -35,7 +35,6 @@ export type StatementImport = {
   imported_by_name: string
   imported_at: string
   created_count: number
-  duplicate_count: number
   ignored_count: number
 }
 

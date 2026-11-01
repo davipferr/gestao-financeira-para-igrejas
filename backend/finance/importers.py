@@ -7,11 +7,9 @@ o OFX é lido com expressões regulares tolerantes, sem exigir um XML válido.
 """
 
 import csv
-import hashlib
 import io
 import re
 import unicodedata
-from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -35,7 +33,6 @@ class ParsedEntry:
     description: str
     # Valor com sinal, como vem do banco: negativo é saída e positivo é entrada.
     amount: Decimal
-    external_id: str | None = None
 
 
 def decode(raw):
@@ -94,7 +91,7 @@ def parse_ofx(text):
             raise StatementImportError(f'Lançamento {position} do OFX: {error}.')
 
         description = fields.get('MEMO') or fields.get('NAME') or fields.get('TRNTYPE') or 'Lançamento importado'
-        entries.append(ParsedEntry(entry_date, description, amount, fields.get('FITID') or None))
+        entries.append(ParsedEntry(entry_date, description, amount))
     return entries
 
 
@@ -103,6 +100,8 @@ CSV_COLUMNS = {
     'description': {'descricao', 'historico'},
     'amount': {'valor'},
 }
+# Alguns bancos não trazem a descrição; sem ela o lançamento fica com a descrição vazia.
+CSV_OPTIONAL_COLUMNS = {'description'}
 CSV_DATE_FORMATS = ['%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y']
 
 
@@ -129,11 +128,11 @@ def parse_csv(text):
         for key, accepted in CSV_COLUMNS.items():
             if normalize(name) in accepted:
                 columns[key] = index
-    missing = [key for key in CSV_COLUMNS if key not in columns]
+    missing = [key for key in CSV_COLUMNS if key not in columns and key not in CSV_OPTIONAL_COLUMNS]
     if missing:
         found = ', '.join(name.strip() for name in header)
         raise StatementImportError(
-            f'O CSV precisa ter as colunas data, descrição e valor. Colunas encontradas: {found}.'
+            f'O CSV precisa ter as colunas data e valor. Colunas encontradas: {found}.'
         )
 
     entries = []
@@ -142,12 +141,14 @@ def parse_csv(text):
             continue
         try:
             try:
-                raw_date, description, raw_amount = (row[columns[key]] for key in CSV_COLUMNS)
+                raw_date, description, raw_amount = (
+                    row[columns[key]] if key in columns else '' for key in CSV_COLUMNS
+                )
             except IndexError:
                 raise ValueError('a linha não tem todas as colunas')
             entries.append(ParsedEntry(
                 parse_csv_date(raw_date),
-                description.strip() or 'Lançamento importado',
+                description.strip(),
                 parse_amount(raw_amount),
             ))
         except ValueError as error:
@@ -156,28 +157,6 @@ def parse_csv(text):
     if not entries:
         raise StatementImportError('Nenhum lançamento foi encontrado no arquivo CSV.')
     return entries
-
-
-def build_import_keys(entries):
-    """
-    Gera a impressão digital de cada lançamento para detectar duplicados.
-
-    Quando o banco informa um identificador (FITID do OFX), ele é usado. Sem
-    identificador, a chave combina data, valor e descrição, mais a ordem da
-    repetição dentro do arquivo: assim duas ofertas iguais no mesmo dia não
-    são confundidas, mas importar o mesmo extrato de novo não duplica nada.
-    """
-    occurrences = Counter()
-    keys = []
-    for entry in entries:
-        if entry.external_id:
-            base = f'ofx|{entry.external_id}|{entry.date}|{entry.amount}'
-        else:
-            signature = (entry.date, entry.amount, normalize(entry.description))
-            occurrences[signature] += 1
-            base = f'{entry.date}|{entry.amount}|{signature[2]}|{occurrences[signature]}'
-        keys.append(hashlib.sha256(base.encode('utf-8')).hexdigest())
-    return keys
 
 
 def import_statement(uploaded_file, user):
@@ -190,23 +169,20 @@ def import_statement(uploaded_file, user):
 
     text = decode(uploaded_file.read())
     entries = parse_ofx(text) if extension == StatementImport.FileFormat.OFX else parse_csv(text)
-    keys = build_import_keys(entries)
 
+    # Todas as linhas com valor viram lançamentos, mesmo que já tenham sido
+    # importadas antes: quem importa decide o que excluir.
     with db_transaction.atomic():
         statement_import = StatementImport.objects.create(
             file_name=file_name[:255],
             file_format=extension,
             imported_by=user,
         )
-        known_keys = set(Transaction.objects.filter(import_key__in=keys).values_list('import_key', flat=True))
         new_transactions = []
-        for entry, key in zip(entries, keys):
+        for entry in entries:
             if entry.amount == 0:
                 statement_import.ignored_count += 1
-            elif key in known_keys:
-                statement_import.duplicate_count += 1
             else:
-                known_keys.add(key)
                 new_transactions.append(Transaction(
                     date=entry.date,
                     description=entry.description[:DESCRIPTION_MAX_LENGTH],
@@ -214,7 +190,6 @@ def import_statement(uploaded_file, user):
                     kind=Kind.EXPENSE if entry.amount < 0 else Kind.INCOME,
                     created_by=user,
                     statement_import=statement_import,
-                    import_key=key,
                 ))
         Transaction.objects.bulk_create(new_transactions)
         statement_import.created_count = len(new_transactions)

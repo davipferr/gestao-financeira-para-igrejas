@@ -14,7 +14,6 @@ from .importers import (
     MAX_FILE_SIZE,
     ParsedEntry,
     StatementImportError,
-    build_import_keys,
     parse_amount,
     parse_csv,
     parse_ofx,
@@ -83,8 +82,8 @@ class ParseOfxTests(SimpleTestCase):
         entries = parse_ofx(OFX_SAMPLE)
 
         self.assertEqual(entries, [
-            ParsedEntry(date(2026, 9, 7), 'PIX RECEBIDO - OFERTA MISSIONÁRIA', Decimal('350.00'), '202609070001'),
-            ParsedEntry(date(2026, 9, 10), 'CONTA DE ÁGUA SAAE', Decimal('-89.90'), '202609100002'),
+            ParsedEntry(date(2026, 9, 7), 'PIX RECEBIDO - OFERTA MISSIONÁRIA', Decimal('350.00')),
+            ParsedEntry(date(2026, 9, 10), 'CONTA DE ÁGUA SAAE', Decimal('-89.90')),
         ])
 
     def test_file_without_transactions_is_rejected(self):
@@ -111,29 +110,20 @@ class ParseCsvTests(SimpleTestCase):
 
         self.assertEqual(entries, [ParsedEntry(date(2026, 9, 1), 'Oferta', Decimal('10.00'))])
 
+    def test_description_column_is_optional(self):
+        entries = parse_csv('Data;Hora;Tipo;Valor\n01/09/2026;10:30;Pix;-10,00\n')
+
+        self.assertEqual(entries, [ParsedEntry(date(2026, 9, 1), '', Decimal('-10.00'))])
+
     def test_missing_column_lists_found_columns(self):
-        with self.assertRaisesMessage(StatementImportError, 'Colunas encontradas: Data, Valor.'):
-            parse_csv('Data;Valor\n01/09/2026;10,00\n')
+        with self.assertRaisesMessage(StatementImportError, 'Colunas encontradas: Data, Descrição.'):
+            parse_csv('Data;Descrição\n01/09/2026;Oferta\n')
 
     def test_invalid_line_reports_line_number(self):
         broken = CSV_SAMPLE.replace('05/09/2026', '31/02/2026')
 
         with self.assertRaisesMessage(StatementImportError, 'Linha 4 do CSV: data inválida "31/02/2026"'):
             parse_csv(broken)
-
-
-class ImportKeyTests(SimpleTestCase):
-    def test_identical_entries_in_same_file_get_different_keys(self):
-        entry = ParsedEntry(date(2026, 9, 1), 'PIX RECEBIDO', Decimal('50.00'))
-
-        first, second = build_import_keys([entry, entry])
-
-        self.assertNotEqual(first, second)
-
-    def test_same_file_always_produces_same_keys(self):
-        entries = parse_csv(CSV_SAMPLE)
-
-        self.assertEqual(build_import_keys(entries), build_import_keys(entries))
 
 
 class StatementImportApiTests(APITestCase):
@@ -158,22 +148,27 @@ class StatementImportApiTests(APITestCase):
         self.assertIsNone(expense.category)
         self.assertEqual(expense.created_by, self.admin)
 
-    def test_reimporting_same_ofx_creates_nothing(self):
+    def test_reimporting_same_ofx_creates_entries_again(self):
         self.upload('extrato.ofx', OFX_SAMPLE, encoding='cp1252')
 
         response = self.upload('extrato.ofx', OFX_SAMPLE, encoding='cp1252')
 
-        self.assertEqual(response.json()['created_count'], 0)
-        self.assertEqual(response.json()['duplicate_count'], 2)
-        self.assertEqual(Transaction.objects.count(), 2)
+        self.assertEqual(response.json()['created_count'], 2)
+        self.assertEqual(Transaction.objects.count(), 4)
 
-    def test_csv_keeps_identical_offerings_and_skips_them_on_reimport(self):
+    def test_csv_keeps_identical_entries_and_imports_them_again(self):
         first = self.upload('extrato.csv', CSV_SAMPLE)
         second = self.upload('extrato.csv', CSV_SAMPLE)
 
         self.assertEqual(first.json()['created_count'], 4)
-        self.assertEqual(second.json()['duplicate_count'], 4)
-        self.assertEqual(Transaction.objects.filter(description='PIX RECEBIDO').count(), 2)
+        self.assertEqual(second.json()['created_count'], 4)
+        self.assertEqual(Transaction.objects.filter(description='PIX RECEBIDO').count(), 4)
+
+    def test_csv_without_description_creates_entries_with_empty_description(self):
+        response = self.upload('extrato.csv', 'Data;Hora;Valor\n01/09/2026;10:30;-10,00\n')
+
+        self.assertEqual(response.json()['created_count'], 1)
+        self.assertEqual(Transaction.objects.get().description, '')
 
     def test_zero_amount_lines_are_ignored(self):
         response = self.upload('extrato.csv', 'Data;Descrição;Valor\n01/09/2026;Saldo anterior;0,00\n02/09/2026;Oferta;10,00\n')

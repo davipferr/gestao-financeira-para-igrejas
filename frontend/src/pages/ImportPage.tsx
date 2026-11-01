@@ -85,7 +85,7 @@ export function ImportPage() {
         <h1 className="text-2xl font-semibold">Importar extrato</h1>
         <p className="max-w-prose text-lg text-muted-foreground">
           Envie o extrato baixado do internet banking. Os lançamentos entram sem categoria, para você classificar
-          depois. Importar o mesmo extrato de novo não duplica nada.
+          depois. Atenção: importar o mesmo extrato de novo cria os lançamentos outra vez.
         </p>
       </div>
 
@@ -98,8 +98,8 @@ export function ImportPage() {
             <strong>OFX</strong> (recomendado): procure no banco a opção de exportar o extrato em "OFX" ou "Money".
           </li>
           <li>
-            <strong>CSV</strong>: planilha com as colunas <strong>data</strong>, <strong>descrição</strong> e{' '}
-            <strong>valor</strong>. Use valores negativos para pagamentos, por exemplo -189,90.
+            <strong>CSV</strong>: planilha com as colunas <strong>data</strong> e <strong>valor</strong>, e se
+            tiver, <strong>descrição</strong>. Use valores negativos para pagamentos, por exemplo -189,90.
           </li>
         </ul>
         <div>
@@ -152,7 +152,6 @@ export function ImportPage() {
             <AlertDescription className="flex flex-col gap-3 text-base">
               <ul className="list-disc pl-6">
                 <li>{plural(result.created_count, 'lançamento criado', 'lançamentos criados')}</li>
-                <li>{plural(result.duplicate_count, 'duplicado ignorado', 'duplicados ignorados')}</li>
                 {result.ignored_count > 0 && (
                   <li>{plural(result.ignored_count, 'linha sem valor ignorada', 'linhas sem valor ignoradas')}</li>
                 )}
@@ -189,13 +188,12 @@ export function ImportPage() {
                   <TableHead className="hidden md:table-cell">Importado por</TableHead>
                   <TableHead className="hidden sm:table-cell">Data</TableHead>
                   <TableHead className="text-right">Criados</TableHead>
-                  <TableHead className="text-right">Duplicados</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {history.data.results.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground">
+                    <TableCell colSpan={4} className="text-muted-foreground">
                       Nenhum extrato importado ainda.
                     </TableCell>
                   </TableRow>
@@ -211,7 +209,6 @@ export function ImportPage() {
                     <TableCell className="hidden md:table-cell">{item.imported_by_name}</TableCell>
                     <TableCell className="hidden sm:table-cell">{formatDateTime(item.imported_at)}</TableCell>
                     <TableCell className="text-right tabular-nums">{item.created_count}</TableCell>
-                    <TableCell className="text-right tabular-nums">{item.duplicate_count}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

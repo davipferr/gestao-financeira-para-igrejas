@@ -71,7 +71,6 @@ function TransactionForm({ transaction, categories, onClose, onSaved }: Omit<Tra
   function validate() {
     const found: FieldErrors = {}
     if (!date) found.date = ['Informe a data do lançamento.']
-    if (!description.trim()) found.description = ['Informe uma descrição.']
     const parsed = parseMoneyInput(amount)
     if (parsed === null) found.amount = ['Informe um valor válido, por exemplo 1.250,00.']
     else if (Number(parsed) <= 0) found.amount = ['O valor deve ser maior que zero.']

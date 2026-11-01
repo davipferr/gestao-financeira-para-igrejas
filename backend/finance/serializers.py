@@ -86,7 +86,7 @@ class StatementImportSerializer(serializers.ModelSerializer):
         model = StatementImport
         fields = [
             'id', 'file_name', 'file_format', 'imported_by_name', 'imported_at',
-            'created_count', 'duplicate_count', 'ignored_count',
+            'created_count', 'ignored_count',
         ]
 
     def get_imported_by_name(self, statement_import):

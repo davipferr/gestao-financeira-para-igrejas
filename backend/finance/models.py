@@ -44,7 +44,6 @@ class StatementImport(models.Model):
     )
     imported_at = models.DateTimeField('importado em', auto_now_add=True)
     created_count = models.PositiveIntegerField('lançamentos criados', default=0)
-    duplicate_count = models.PositiveIntegerField('duplicados ignorados', default=0)
     ignored_count = models.PositiveIntegerField('linhas sem valor ignoradas', default=0)
 
     class Meta:
@@ -58,7 +57,8 @@ class StatementImport(models.Model):
 
 class Transaction(models.Model):
     date = models.DateField('data', db_index=True)
-    description = models.CharField('descrição', max_length=255)
+    # Pode ficar vazia: alguns extratos CSV não trazem a descrição.
+    description = models.CharField('descrição', max_length=255, blank=True)
     # O valor é sempre positivo; o campo "kind" diz se ele entra ou sai do caixa.
     amount = models.DecimalField(
         'valor',
@@ -93,8 +93,6 @@ class Transaction(models.Model):
         related_name='transactions',
         verbose_name='importação de origem',
     )
-    # Impressão digital do lançamento no extrato; evita importar o mesmo lançamento duas vezes.
-    import_key = models.CharField('chave de importação', max_length=64, null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         verbose_name = 'lançamento'
